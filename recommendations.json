@@ -1,0 +1,30 @@
+{
+  "HEP": {
+    "display": "Home Exercise Program",
+    "type": "exercise_bundle",
+    "exercise_files": [
+      "Cervical Isometrics.pdf",
+      "McKenzie-Low-Back-English.pdf",
+      "McKenzie-Low-Back-Spanish.pdf"
+    ]
+  },
+  "CREATINE": {
+    "display": "Creatine Monohydrate - take 2 grams per day and increase to 4 grams per day with increased water intake.",
+    "type": "pdf_or_link",
+    "pdf_name": "Creatine"
+  },
+  "D3 + K2": {
+    "display": "Vitamins D3 + K2",
+    "type": "pdf_or_link",
+    "pdf_name": "Vitamins D3 + K2"
+  },
+  "CITRACAL": {
+    "display": "Citracal",
+    "type": "pdf_or_link",
+    "pdf_name": "Citracal"
+  },
+  "SILAGEN": {
+    "display": "Silagen",
+    "type": "link_or_plain"
+  }
+}

@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+
+credentialsCS2.json
+token_calendar.pickle
+token_gmail.pickle
+token.pickle
+
+OUTPUT/
+
+settings.json

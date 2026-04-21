@@ -1,0 +1,31 @@
+{
+  "calendar_id": "calendar_id",
+  "clinic_name": "clinic_name",
+  "phone": "phone_number",
+  "welcome_email": "email_1",
+  "office_email": "email_2",
+  "coordinator_email": "email_3",
+  "timezone": "Location",
+  "template_dir": "IMG_PT_TEMPLATES",
+  "output_root": "OUTPUT",
+  "exercises_dir": "EXERCISES",
+  "supplements_dir": "SUPPLEMENTS",
+  "hyperlinks_dir": "HYPERLINKS",
+  "imaging_display_names": {
+    "MRI": "MRI",
+    "CT": "CT",
+    "DXR": "Dynamic X-Rays"
+  },
+  "region_display_names": {
+    "CS": "Cervical Spine",
+    "TS": "Thoracic Spine",
+    "LS": "Lumbar Spine",
+    "BRAIN": "Brain"
+  },
+  "region_sort_order": {
+    "CS": 0,
+    "TS": 1,
+    "LS": 2,
+    "BRAIN": 3
+  }
+}
