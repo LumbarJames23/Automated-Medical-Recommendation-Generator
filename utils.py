@@ -6,10 +6,9 @@ from app_config import REGION_DISPLAY_NAMES, REGION_SORT_ORDER
 
 
 def remove_html_tags(text: str) -> str:
-    text = html.unescape(text)
-    clean = re.sub(r"<.*?>", " ", text)
-    clean = re.sub(r"\s+", " ", clean).strip()
-    return clean
+    unescaped = html.unescape(text)
+    clean = re.sub(r"<.*?>", " ", unescaped)
+    return re.sub(r"\s+", " ", clean).strip()
 
 
 def region_verbose(region: str) -> str:

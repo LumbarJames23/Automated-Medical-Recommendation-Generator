@@ -1,6 +1,6 @@
 import argparse
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate recommendation documents and Gmail drafts from Google Calendar events."
     )

@@ -6,75 +6,63 @@ from app_config import EXERCISES_DIR, SUPPLEMENTS_DIR, HYPERLINKS_DIR, RECOMMEND
 from utils import remove_html_tags, find_file_case_insensitive, sort_regions, sanitize_filename
 
 
-def parse_event_data(event):
-    title = event.get("summary", "")
-    desc = event.get("description", "")
-    print(f"\n{'-'*60}\nProcessing: {title}")
-
-    if not desc or "RECS:" not in desc:
-        print(f"{title} - Skipped (no RECS: found)")
-        return None
-
-    full = remove_html_tags(desc)
-
+def _extract_name(title: str) -> str:
     name_match = re.match(r"[+]?([A-Za-z']+,\s+[A-Za-z']+)", title)
     if name_match:
-        name = name_match.group(1).strip()
-    else:
-        name = sanitize_filename(title.strip()) if title.strip() else "MISSING_EVENT_TITLE"
+        return name_match.group(1).strip()
+    return sanitize_filename(title.strip()) if title.strip() else "MISSING_EVENT_TITLE"
 
+
+def _extract_surg(full: str) -> str | None:
     surg_match = re.search(r"\{([^}]+)\}", full)
-    surg = surg_match.group(1).strip() if surg_match else None
+    return surg_match.group(1).strip() if surg_match else None
 
+
+def _extract_dob(full: str) -> str:
     dob_match = re.search(r"DOB[:\s]*(\d{2}/\d{2}/\d{4})", full)
-    dob = dob_match.group(1) if dob_match else "MISSING"
+    return dob_match.group(1) if dob_match else "MISSING"
 
+
+def _classify_entry(kind: str, regions: list, img: dict, pt: list) -> None:
+    if kind in ["CT", "MRI", "DXR"]:
+        for region in regions:
+            if region not in img[kind]:
+                img[kind].append(region)
+    elif kind == "PT":
+        for region in regions:
+            if region not in pt:
+                pt.append(region)
+
+
+def _parse_bracket_blocks(blocks: list[str]) -> tuple[dict, list]:
     img, pt = defaultdict(list), []
-    bracket_blocks = re.findall(r"\[([^\]]+)\]", full)
-
-    for block in bracket_blocks:
-        entries = [e.strip().lower() for e in block.split(",")]
-        for entry in entries:
+    for block in blocks:
+        for entry in [e.strip().lower() for e in block.split(",")]:
             if not entry:
                 continue
-
             words = entry.split()
-            if not words:
-                continue
-
-            kind = words[0].upper()
-            regions = [w.upper() for w in words[1:]]
-
-            if kind in ["CT", "MRI", "DXR"]:
-                for region in regions:
-                    if region not in img[kind]:
-                        img[kind].append(region)
-            elif kind == "PT":
-                for region in regions:
-                    if region not in pt:
-                        pt.append(region)
-
+            _classify_entry(words[0].upper(), [w.upper() for w in words[1:]], img, pt)
     for k in img:
         img[k] = sort_regions(img[k])
-    pt = sort_regions(pt)
+    return img, sort_regions(pt)
 
-    bracket_items = re.findall(r"\[([^\]]+)\]", full)
+
+def _parse_recommendations(blocks: list[str]) -> list:
     recs = []
-
-    for item in bracket_items:
-        tokens = [i.strip() for i in item.split(",")]
-        for token in tokens:
-            if re.match(r"^(PT|CT|MRI|DXR)\s", token.strip().upper()):
+    for item in blocks:
+        for token in [i.strip() for i in item.split(",")]:
+            if re.match(r"^(PT|CT|MRI|DXR)\s", token.upper()):
                 continue
             if token and token not in recs:
                 recs.append(token)
+    return recs
 
+
+def _resolve_attachments(recs: list) -> tuple[list, list]:
     attachments, attachment_log = [], []
-
     for rec in recs:
         rec_upper = rec.upper()
         rule = RECOMMENDATION_RULES.get(rec_upper)
-
         if rule and rule.get("type") == "exercise_bundle":
             for filename in rule.get("exercise_files", []):
                 path = os.path.join(EXERCISES_DIR, filename)
@@ -84,22 +72,20 @@ def parse_event_data(event):
                 else:
                     attachment_log.append(f"  MISSING - {filename} PDF/LINK")
             continue
-
-        pdf_target = None
-        if rule:
-            pdf_target = rule.get("pdf_name")
-
+        pdf_target = rule.get("pdf_name") if rule else None
         pdf_path = find_file_case_insensitive(SUPPLEMENTS_DIR, pdf_target or rec)
         link_path = find_file_case_insensitive(HYPERLINKS_DIR, rec)
-
-        if pdf_path and os.path.exists(pdf_path):
+        if pdf_path:
             attachments.append(pdf_path)
             attachment_log.append(f"  FOUND {pdf_path}")
-        elif link_path and os.path.exists(link_path):
+        elif link_path:
             attachment_log.append(f"  FOUND {link_path}")
         else:
             attachment_log.append(f"  MISSING - {rec} PDF/LINK")
+    return attachments, attachment_log
 
+
+def _log_parsed(name, dob, surg, img, pt, recs, attachment_log):
     print(f"NAME: {name}")
     print(f"DOB: {dob}")
     print(f"SURGICAL RECOMMENDATION: {surg if surg else 'NONE'}")
@@ -108,6 +94,27 @@ def parse_event_data(event):
     print(f"RECOMMENDATIONS: {recs if recs else 'NONE'}")
     print("ATTACHMENTS:")
     print("\n".join(attachment_log) if attachment_log else "  NONE")
+
+
+def parse_event_data(event: dict) -> dict | None:
+    title = event.get("summary", "")
+    desc = event.get("description", "")
+    print(f"\n{'-'*60}\nProcessing: {title}")
+
+    if not desc or "RECS:" not in desc:
+        print(f"{title} - Skipped (no RECS: found)")
+        return None
+
+    full = remove_html_tags(desc)
+    bracket_blocks = re.findall(r"\[([^\]]+)\]", full)
+    name = _extract_name(title)
+    surg = _extract_surg(full)
+    dob = _extract_dob(full)
+    img, pt = _parse_bracket_blocks(bracket_blocks)
+    recs = _parse_recommendations(bracket_blocks)
+    attachments, attachment_log = _resolve_attachments(recs)
+
+    _log_parsed(name, dob, surg, img, pt, recs, attachment_log)
 
     return {
         "name": name,

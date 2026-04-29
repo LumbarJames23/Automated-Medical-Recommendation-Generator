@@ -7,49 +7,47 @@ from docx2pdf import convert
 from app_config import OUTPUT_ROOT, TEMPLATE_DIR
 
 
-def edit_template(path, repl, save):
-    doc = Document(path)
-    for p in doc.paragraphs:
-        for k, v in repl.items():
-            if k in p.text:
-                p.text = p.text.replace(k, v)
-    doc.save(save)
+def _fill_template(template_path: str, save_path: str, name: str, dob: str, date_text: str) -> None:
+    doc = Document(template_path)
+    replacements = {"{$NAME}": name, "{$DOB}": dob, "{$DATE}": date_text}
+    for paragraph in doc.paragraphs:
+        for key, value in replacements.items():
+            if key in paragraph.text:
+                paragraph.text = paragraph.text.replace(key, value)
+    doc.save(save_path)
     time.sleep(0.3)
-    convert(save, save.replace(".docx", ".pdf"))
+    convert(save_path, save_path.replace(".docx", ".pdf"))
 
 
-def generate_documents(date, parsed):
+def _generate_from_template(
+    template_name: str, save_name: str, out_folder: str,
+    name: str, dob: str, date_text: str
+) -> None:
+    template_path = os.path.join(TEMPLATE_DIR, template_name)
+    if not os.path.exists(template_path):
+        print(f"Missing Template: {template_path}")
+        return
+    print(f"Generating: {template_name}")
+    _fill_template(template_path, os.path.join(out_folder, save_name), name, dob, date_text)
+
+
+def generate_documents(date, parsed: dict) -> None:
     out_folder = os.path.join(OUTPUT_ROOT, parsed["name"])
     os.makedirs(out_folder, exist_ok=True)
-    today, date_text = date.strftime("%m.%d.%y"), date.strftime("%m/%d/%Y")
+    today = date.strftime("%m.%d.%y")
+    date_text = date.strftime("%m/%d/%Y")
 
-    # Imaging templates
     for img, regs in parsed["img"].items():
         for reg in regs:
-            template_name = f"RX_{'DXR' if img == 'DXR' else img}_{reg}_TEMPLATE.docx"
-            template_path = os.path.join(TEMPLATE_DIR, template_name)
-            if os.path.exists(template_path):
-                print(f"Generating: {template_name}")
-                save_path = os.path.join(out_folder, f"RX {img} {reg} {today}.docx")
-                edit_template(
-                    template_path,
-                    {"{$NAME}": parsed["name"], "{$DOB}": parsed["dob"], "{$DATE}": date_text},
-                    save_path,
-                )
-            else:
-                print(f"Missing Template: {template_path}")
-
-    # PT templates
-    for reg in parsed["pt"]:
-        template_name = f"RX_PT_{reg}_TEMPLATE.docx"
-        template_path = os.path.join(TEMPLATE_DIR, template_name)
-        if os.path.exists(template_path):
-            print(f"Generating: {template_name}")
-            save_path = os.path.join(out_folder, f"RX PT {reg} {today}.docx")
-            edit_template(
-                template_path,
-                {"{$NAME}": parsed["name"], "{$DOB}": parsed["dob"], "{$DATE}": date_text},
-                save_path,
+            _generate_from_template(
+                f"RX_{img}_{reg}_TEMPLATE.docx",
+                f"RX {img} {reg} {today}.docx",
+                out_folder, parsed["name"], parsed["dob"], date_text,
             )
-        else:
-            print(f"Missing Template: {template_path}")
+
+    for reg in parsed["pt"]:
+        _generate_from_template(
+            f"RX_PT_{reg}_TEMPLATE.docx",
+            f"RX PT {reg} {today}.docx",
+            out_folder, parsed["name"], parsed["dob"], date_text,
+        )

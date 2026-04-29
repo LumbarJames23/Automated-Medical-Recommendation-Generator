@@ -11,16 +11,18 @@ from document_generator import generate_documents
 from create_gmail_draft import create_gmail_draft
 
 
+def _resolve_date_range(args) -> tuple[str, str]:
+    if args.today:
+        return get_user_date_range("", "")
+    if args.start or args.end:
+        return get_user_date_range(args.start or "", args.end or "")
+    return get_user_date_range()
+
+
 def main():
     args = parse_args()
     calendar_service, gmail_service = build_services()
-
-    if args.today:
-        start, end = get_user_date_range("", "")
-    elif args.start or args.end:
-        start, end = get_user_date_range(args.start or "", args.end or "")
-    else:
-        start, end = get_user_date_range()
+    start, end = _resolve_date_range(args)
 
     events = get_events(calendar_service, CALENDAR_ID, start, end)
     print(f"Found {len(events)} events")
@@ -33,18 +35,16 @@ def main():
             if not parsed:
                 continue
 
-            date = datetime.fromisoformat(
-                ev["start"].get("dateTime", ev["start"].get("date"))
-            )
+            event_start = ev["start"]
+            date = datetime.fromisoformat(event_start.get("dateTime", event_start.get("date")))
             generate_documents(date, parsed)
             create_gmail_draft(gmail_service, parsed, date)
 
         except Exception as e:
             print("\nERROR - Failed processing event:")
             print(f"  TITLE: {title}")
-            print(f"  REASON: {str(e)}\n")
+            print(f"  REASON: {e}\n")
             traceback.print_exc()
-            continue
 
 
 if __name__ == "__main__":
