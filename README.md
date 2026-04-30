@@ -224,6 +224,101 @@ OUTPUT/
 ![alt text](image-3.png) 
 
 ### Updating the System Externally
+ 
+#### settings.json — Clinic-Wide Configuration
+No code changes needed for any of these. Edit the value, save, run.
+
+  Change clinic info
+
+    "clinic_name": "Dr. Smith",
+    "phone": "310-555-1234",
+    "welcome_email": "welcome@newclinic.com"
+
+  Change the email subject line
+
+    "subject_prefix": "Dr. Smith Recommendations"
+  
+  Change PT schedule wording
+
+    "pt_schedule": "three times a week for 4 weeks"
+    
+  Change the closing message — {phone} is automatically replaced with the phone number above
+
+    "closing_message": "Contact our office at {phone} with any questions."
+    
+  Change the imaging note that appears when PT and imaging are both ordered
+
+    "pt_imaging_note": "All imaging must be completed after physical therapy."
+
+  Add a new region — add to all three region blocks (sort order: priority is lowest number (highest priority) to highest number (lowest priority))
+
+    "region_display_names": {
+        "CS": "Cervical Spine",
+        "TS": "Thoracic Spine",
+        "LS": "Lumbar Spine",
+        "BRAIN": "Brain",
+        "HIP": "Hip"
+    },
+    "region_sort_order": {
+        "CS": 0,
+        "TS": 1,
+        "LS": 2,
+        "BRAIN": 3,
+        "HIP": 4
+    }
+  
+  Change how an imaging type displays in the email
+
+    "imaging_display_names": {
+        "MRI": "Magnetic Resonance Imaging (MRI)",
+        "CT": "CT Scan",
+        "DXR": "Dynamic X-Rays"
+    }
+
+#### recommendations.json — Recommendation Specific Configuration
+
+  The key is the bracket keyword used in the calendar event (e.g. [CREATINE]). Keys in are case-insensitive. [creatine], [CREATINE], [CrEaTiNe] in the event all resolve to the "CREATINE" key in the JSON.
+
+  Add a new supplement with a PDF in the SUPPLEMENTS folder
+
+    "MAGNESIUM": {
+        "display": "Magnesium Glycinate",
+        "type": "pdf_or_link",
+        "pdf_name": "Magnesium"
+    }
+  The script looks for a file named Magnesium (any extension) in the SUPPLEMENTS folder and attaches it.
+
+  Add a new recommendation that only has a hyperlink (no PDF)
+
+    "CPAP": {
+        "display": "CPAP Therapy",
+        "type": "link_or_plain"
+    }
+
+  The script looks for a file named CPAP in the HYPERLINKS folder containing the URL. If not found, renders as plain text.
+
+  Add a new exercise bundle — attaches multiple PDFs from the EXERCISES folder
+
+    "CORE": {
+        "display": "Core Strengthening Program",
+        "type": "exercise_bundle",
+        "exercise_files": [
+            "Core Exercise 1.pdf",
+            "Core Exercise 2.pdf"
+        ]
+    }
+
+  Change the display text of an existing recommendation
+
+    "CREATINE": {
+        "display": "Creatine Monohydrate 2–4g daily with increased water intake.",
+        "type": "pdf_or_link",
+        "pdf_name": "Creatine"
+    }
+
+#### Simplified Updating Attachments / Templates: 
+  In the case that you do not need to change the key from the display name, use this simplified version.
+  
   Add a New PDF
   
     1. Place the file in EXERCISES/ or SUPPLEMENTS/
@@ -234,7 +329,7 @@ OUTPUT/
     1. Create a .txt file in HYPERLINKS/
     2. Put the URL inside
 
-  Add a New Template
+  Add a New Imaging or PT Template
   
     1. Add a .docx file to IMG_PT_TEMPLATES/
     2. Include placeholders such as:
