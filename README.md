@@ -84,13 +84,103 @@ Full Project Structure:
 ## Usage
 ### 1. Create or Update Google Calendar:
 
-  Recommended Title Format: Last Name, First Name - XXXXXXXX
+#### Event Title Format
+```
+Last, First
+```
+- Must be `Last, First` format with a comma and space between names
+- Apostrophes are supported: `O'Brien, James`
+- A `+` prefix is allowed and ignored: `+Smith, John`
+- If the title does not match this pattern, the raw title is used as the patient name
 
 ### 2. Add Structured Data into Event Description:
 
   Example Description: 
 
-  ![alt text](image-1.png) 
+  ![alt text](image-1.png)
+
+#### Event Description Format
+
+The description must contain `RECS:` — events without it are skipped.
+
+**REGEX:**
+```
+DOB: MM/DD/YYYY
+RECS:
+```
+`DOB` accepts `DOB: MM/DD/YYYY` or `DOB MM/DD/YYYY` — the colon is optional.
+
+#### Bracket Blocks `[ ]`
+
+Everything inside square brackets is parsed. Brackets hold imaging orders, PT orders, and recommendations. They can be mixed in the same bracket or split across separate ones. 
+
+**Imaging** — Imaging type first, then regions:
+```
+[MRI CS] = MRI of the Cervical Spine
+[CT LS] = CT of the Lumbar Spine
+[DXR CS LS] = Dynamic X-Rays of the Cervical Spine and Lumbar Spine
+[MRI CS, CT LS] = MRI of the Cervical Spine and CT of the Lumbar Spine
+```
+
+**Physical Therapy** — `PT` followed by regions:
+```
+[PT CS]
+[PT LS]
+[PT CS LS]
+```
+
+**Recommendations** — any token that does not start with `MRI`, `CT`, `DXR`, or `PT` followed by a space:
+```
+[HEP]
+[Vitamin D]
+[HEP, Fish Oil, Vitamin D, patient needs referral to neuropsychiatry]
+```
+
+**Mixed bracket** — all valid in one block:
+```
+[MRI CS LS, PT CS, HEP, Vitamin D]
+```
+
+#### Region and Imaging Codes
+
+Note: Codes are Case Insensitive
+
+| Code | Region |
+|---|---|
+| `CS` | Cervical Spine |
+| `TS` | Thoracic Spine |
+| `LS` | Lumbar Spine |
+| `BRAIN` | Brain |
+
+| Code | Imaging |
+|---|---|
+| `MRI` | MRI |
+| `CT` | CT |
+| `DXR` | Dynamic X-Rays |
+
+#### Surgical Patients
+Wrap the procedure name in curly braces anywhere in the description:
+```
+{L4-L5 Microdiscectomy}
+```
+This triggers the surgical email template and adds the coordinator to CC.
+
+#### Non-Surgical Example
+```
+DOB: 04/15/1978
+RECS:
+
+[MRI CS LS, PT CS LS, HEP, Vitamin D]
+```
+
+#### Surgical Example
+```
+DOB: 04/15/1978
+RECS:
+
+{L4-L5 Microdiscectomy}
+[DXR CS LS, HEP]
+```
 
 ### 3. Running the Script:
   For each event:
